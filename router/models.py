@@ -10,17 +10,14 @@ DATABASE_USER = "postgres.vrwzhwkdvwuyshvzcjvt"
 DATABASE_PASSWORD = "Drzv#.rSHHd2D?K"
 DATABASE_URL = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
 
-if not database_exists(DATABASE_URL):
-    create_database(DATABASE_URL)
-
 engine = create_engine(DATABASE_URL)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
 class User(Base):
     __tablename__ = 'users'
-    
     user_id = Column(Integer, primary_key=True, autoincrement=True)
     login = Column(String, unique=True, nullable=False)
     mail = Column(String, unique=True, nullable=False)
@@ -88,3 +85,6 @@ class Target(Base):
     date_end = Column(Date, nullable=False)
     
     user = relationship("User", back_populates="targets")
+
+# Создаем все таблицы в базе данных
+# Base.metadata.create_all(bind=engine):
