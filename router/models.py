@@ -1,6 +1,20 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy_utils import database_exists, create_database
+
+DATABASE_HOST = "aws-0-eu-central-1.pooler.supabase.com"
+DATABASE_NAME = "postgres"
+DATABASE_PORT = "6543"
+DATABASE_USER = "postgres.vrwzhwkdvwuyshvzcjvt"
+DATABASE_PASSWORD = "funcode"
+DATABASE_URL = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
+
+if not database_exists(DATABASE_URL):
+    create_database(DATABASE_URL)
+
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
