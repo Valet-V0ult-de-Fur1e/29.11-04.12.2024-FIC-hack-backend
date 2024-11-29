@@ -1,6 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, create_engine, Interval
+from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 from sqlalchemy_utils import database_exists, create_database
 
 DATABASE_HOST = "aws-0-eu-central-1.pooler.supabase.com"
@@ -39,6 +38,7 @@ class Transaction(Base):
     category = Column(String, nullable=False)
     date = Column(Date, nullable=False)
     type = Column(String, nullable=False)
+    # regular_time = Column(Interval, nullable=True)
     target_id = Column(Integer, ForeignKey('targets.target_id'))
     credit_id = Column(Integer, ForeignKey('credits.credit_id'))
     
