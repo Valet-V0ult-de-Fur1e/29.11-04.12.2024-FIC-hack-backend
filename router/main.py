@@ -82,6 +82,18 @@ def root():
 ######### TRANSACTIONS #########
 
 class TransactionData(BaseModel):
+    """
+    Модель данных для транзакции.
+
+    Атрибуты:
+    - user_id (int): Идентификатор пользователя, связанного с транзакцией.
+    - amount (float): Сумма транзакции.
+    - category (str): Категория транзакции.
+    - date (datetime.date): Дата транзакции.
+    - type (str): Тип транзакции (например, доход или расход).
+    - target_id (int, optional): Идентификатор цели, связанной с транзакцией.
+    - credit_id (int, optional): Идентификатор кредита, связанного с транзакцией.
+    """
     user_id: int
     amount: float
     category: str
@@ -91,22 +103,51 @@ class TransactionData(BaseModel):
     credit_id: int = None
 
 def get_db():
+    """
+    Создает и возвращает сессию базы данных.
+
+    Используется для управления подключением к базе данных в течение запроса.
+    """
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
-@app.post("/transactions/")
+@app.post("/transactions/", response_model=Transaction)
 def add_transaction(transaction_data: TransactionData, db: Session = Depends(get_db)):
+    """
+    Создает новую транзакцию.
+
+    Параметры:
+    - transaction_data (TransactionData): Данные для создания транзакции.
+    - db (Session): Сессия базы данных.
+
+    Возвращает:
+    - Созданную транзакцию.
+    """
     transaction = Transaction(**transaction_data.dict())
     db.add(transaction)
     db.commit()
     db.refresh(transaction)
     return transaction
 
-@app.put("/transactions/{transaction_id}")
+@app.put("/transactions/{transaction_id}", response_model=Transaction)
 def edit_transaction(transaction_id: int, transaction_data: TransactionData, db: Session = Depends(get_db)):
+    """
+    Редактирует существующую транзакцию.
+
+    Параметры:
+    - transaction_id (int): Идентификатор редактируемой транзакции.
+    - transaction_data (TransactionData): Новые данные для транзакции.
+    - db (Session): Сессия базы данных.
+
+    Возвращает:
+    - Обновленную транзакцию.
+
+    Исключения:
+    - HTTPException: Если транзакция не найдена.
+    """
     transaction = db.query(Transaction).filter(Transaction.transaction_id == transaction_id).first()
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
@@ -118,6 +159,19 @@ def edit_transaction(transaction_id: int, transaction_data: TransactionData, db:
 
 @app.delete("/transactions/{transaction_id}")
 def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
+    """
+    Удаляет существующую транзакцию.
+
+    Параметры:
+    - transaction_id (int): Идентификатор удаляемой транзакции.
+    - db (Session): Сессия базы данных.
+
+    Возвращает:
+    - Подтверждение удаления транзакции.
+
+    Исключения:
+    - HTTPException: Если транзакция не найдена.
+    """
     transaction = db.query(Transaction).filter(Transaction.transaction_id == transaction_id).first()
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
@@ -126,6 +180,163 @@ def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
     return {"detail": "Transaction deleted"}
 
 ######### END TRANSACTIONS #########
+
+######### CREDIT #########
+
+class CreditData(BaseModel):
+    user_id: int
+    name: str
+    comment: str = None
+    amount: float
+    procent: float
+    date_start: datetime.date
+    date_end_plan: datetime.date
+    date_end_fact: datetime.date = None
+    type: str
+
+@app.post("/credits/", response_model=Credit)
+def add_credit(credit_data: CreditData, db: Session = Depends(get_db)):
+    """
+    Создает новый кредит.
+
+    Параметры:
+    - credit_data (CreditData): Данные для создания кредита.
+    - db (Session): Сессия базы данных.
+
+    Возвращает:
+    - Созданный кредит.
+    """
+    credit = Credit(**credit_data.dict())
+    db.add(credit)
+    db.commit()
+    db.refresh(credit)
+    return credit
+
+@app.put("/credits/{credit_id}", response_model=Credit)
+def edit_credit(credit_id: int, credit_data: CreditData, db: Session = Depends(get_db)):
+    """
+    Редактирует существующий кредит.
+
+    Параметры:
+    - credit_id (int): Идентификатор редактируемого кредита.
+    - credit_data (CreditData): Новые данные для кредита.
+    - db (Session): Сессия базы данных.
+
+    Возвращает:
+    - Обновленный кредит.
+
+    Исключения:
+    - HTTPException: Если кредит не найден.
+    """
+    credit = db.query(Credit).filter(Credit.credit_id == credit_id).first()
+    if not credit:
+        raise HTTPException(status_code=404, detail="Credit not found")
+    for key, value in credit_data.dict().items():
+        setattr(credit, key, value)
+    db.commit()
+    db.refresh(credit)
+    return credit
+
+@app.delete("/credits/{credit_id}")
+def delete_credit(credit_id: int, db: Session = Depends(get_db)):
+    """
+    Удаляет существующий кредит.
+
+    Параметры:
+    - credit_id (int): Идентификатор удаляемого кредита.
+    - db (Session): Сессия базы данных.
+
+    Возвращает:
+    - Подтверждение удаления кредита.
+
+    Исключения:
+    - HTTPException: Если кредит не найден.
+    """
+    credit = db.query(Credit).filter(Credit.credit_id == credit_id).first()
+    if not credit:
+        raise HTTPException(status_code=404, detail="Credit not found")
+    db.delete(credit)
+    db.commit()
+    return {"detail": "Credit deleted"}
+
+######### END CREDIT #########
+
+######### TARGET #########
+
+class TargetData(BaseModel):
+    user_id: int
+    name: str
+    comment: str = None
+    amount: float
+    date_start: datetime.date
+    date_end: datetime.date
+
+@app.post("/targets/", response_model=Target)
+def add_target(target_data: TargetData, db: Session = Depends(get_db)):
+    """
+    Создает новую цель.
+
+    Параметры:
+    - target_data (TargetData): Данные для создания цели.
+    - db (Session): Сессия базы данных.
+
+    Возвращает:
+    - Созданную цель.
+    """
+    target = Target(**target_data.dict())
+    db.add(target)
+    db.commit()
+    db.refresh(target)
+    return target
+
+@app.put("/targets/{target_id}", response_model=Target)
+def edit_target(target_id: int, target_data: TargetData, db: Session = Depends(get_db)):
+    """
+    Редактирует существующую цель.
+
+    Параметры:
+    - target_id (int): Идентификатор редактируемой цели.
+    - target_data (TargetData): Новые данные для цели.
+    - db (Session): Сессия базы данных.
+
+    Возвращает:
+    - Обновленную цель.
+
+    Исключения:
+    - HTTPException: Если цель не найдена.
+    """
+    target = db.query(Target).filter(Target.target_id == target_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    for key, value in target_data.dict().items():
+        setattr(target, key, value)
+    db.commit()
+    db.refresh(target)
+    return target
+
+@app.delete("/targets/{target_id}")
+def delete_target(target_id: int, db: Session = Depends(get_db)):
+    """
+    Удаляет существующую цель.
+
+    Параметры:
+    - target_id (int): Идентификатор удаляемой цели.
+    - db (Session): Сессия базы данных.
+
+    Возвращает:
+    - Подтверждение удаления цели.
+
+    Исключения:
+    - HTTPException: Если цель не найдена.
+    """
+    target = db.query(Target).filter(Target.target_id == target_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    db.delete(target)
+    db.commit()
+    return {"detail": "Target deleted"}
+
+######### END TARGET #########
 
 if __name__ == "__main__":
    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
