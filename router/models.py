@@ -7,7 +7,7 @@ DATABASE_HOST = "aws-0-eu-central-1.pooler.supabase.com"
 DATABASE_NAME = "postgres"
 DATABASE_PORT = "6543"
 DATABASE_USER = "postgres.vrwzhwkdvwuyshvzcjvt"
-DATABASE_PASSWORD = "funcode"
+DATABASE_PASSWORD = "Drzv#.rSHHd2D?K"
 DATABASE_URL = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
 
 if not database_exists(DATABASE_URL):
