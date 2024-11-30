@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from models import Credit as CreditModel
 from schemas import Credit, CreditCreate
-from dependencies import get_db
+from utils.dependencies import get_db
 
 router = APIRouter()
 

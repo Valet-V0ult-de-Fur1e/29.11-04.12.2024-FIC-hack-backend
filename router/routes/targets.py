@@ -2,13 +2,11 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from models import Target as TargetModel
 from schemas import Target, TargetCreate
-from dependencies import get_db
+from utils.dependencies import get_db
 
 router = APIRouter()
 
 ######### TARGET #########
-
-
 
 @router.post("/", response_model=Target, tags=["Targets"])
 def add_target(target_data: TargetCreate, db: Session = Depends(get_db)):
