@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from models import Transaction as TransactionModel
-from schemas import Transaction, TransactionCreate, TransactionFilter
+from schemas import Transaction, TransactionCreate
 from utils.dependencies import get_db 
 
 router = APIRouter()
