@@ -18,6 +18,18 @@ router = APIRouter()
 access_security = JwtAccessBearer(secret_key="secret_key", auto_error=True)
 
 ######### USER #########
+def get_user_from_token(token: str, host_name: str, db: Session):
+    """
+    Извлекает пользователя из базы данных по токену и хосту.
+    """
+    session = db.query(Session).filter(Session.token == token, Session.host_name == host_name).first()
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid token or host")
+    user = db.query(User).filter(User.user_id == session.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 
 @router.post("/sign_in", tags=["Users"])
 def signin_new_user(user_data: UserSignInData, db: Session = Depends(get_db)):
@@ -73,9 +85,13 @@ def login_user(user_data: UserLoginData, db: Session = Depends(get_db)):
     }
 
 @router.post("/logout", tags=["Users"])
-def logout_user(credentials: JwtAuthorizationCredentials = Depends(access_security), db: Session = Depends(get_db)):
-    token = credentials.raw_token
-    session = db.query(Session).filter(Session.token == token).first()
+def logout_user(data: dict, db: Session = Depends(get_db)):
+    token = data.get("token")
+    host_name = data.get("host_name")
+    if not token or not host_name:
+        raise HTTPException(status_code=400, detail="Token and host_name are required")
+
+    session = db.query(Session).filter(Session.token == token, Session.host_name == host_name).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -84,14 +100,13 @@ def logout_user(credentials: JwtAuthorizationCredentials = Depends(access_securi
     return {"message": "User successfully logged out"}
 
 @router.post("/logout_all", tags=["Users"])
-def logout_all_user_sessions(credentials: JwtAuthorizationCredentials = Depends(access_security), db: Session = Depends(get_db)):
-    token_data = credentials.get("sub")
-    login = token_data.get("login")
+def logout_all_user_sessions(data: dict, db: Session = Depends(get_db)):
+    token = data.get("token")
+    host_name = data.get("host_name")
+    if not token or not host_name:
+        raise HTTPException(status_code=400, detail="Token and host_name are required")
 
-    user = db.query(User).filter(User.login == login).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+    user = get_user_from_token(token, host_name, db)
     db.query(Session).filter(Session.user_id == user.user_id).delete()
     db.commit()
     return {"message": "Logged out from all sessions"}
@@ -125,29 +140,31 @@ def get_active_sessions_count(
 
 
 @router.get("/profile", tags=["Users"])
-def get_user_info(credentials: JwtAuthorizationCredentials = Depends(access_security), db: Session = Depends(get_db)):
-    token_data = credentials.get("sub")
-    login = token_data.get("login")
+def get_user_info(data: dict, db: Session = Depends(get_db)):
+    token = data.get("token")
+    host_name = data.get("host_name")
+    if not token or not host_name:
+        raise HTTPException(status_code=400, detail="Token and host_name are required")
 
-    user = db.query(User).filter(User.login == login).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {"name_first": user.name_first, "name_last": user.name_last, "email": user.mail}
+    user = get_user_from_token(token, host_name, db)
+    return {
+        "name_first": user.name_first,
+        "name_last": user.name_last,
+        "email": user.mail
+    }
 
 @router.put("/update", tags=["Users"])
 def update_user_data(
     user_data: UserUpdateData,
-    credentials: JwtAuthorizationCredentials = Depends(access_security),
+    data: dict,
     db: Session = Depends(get_db),
 ):
-    token_data = credentials.get("sub")
-    login = token_data.get("login")
-    
-    user = db.query(User).filter(User.login == login).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+    token = data.get("token")
+    host_name = data.get("host_name")
+    if not token or not host_name:
+        raise HTTPException(status_code=400, detail="Token and host_name are required")
+
+    user = get_user_from_token(token, host_name, db)
     if user_data.name_first:
         user.name_first = user_data.name_first
     if user_data.name_last:
@@ -166,12 +183,15 @@ def update_user_data(
     db.commit()
     db.refresh(user)
 
-    return {"message": "User data updated successfully", "updated_user": {
-        "name_first": user.name_first,
-        "name_last": user.name_last,
-        "mail": user.mail,
-        "login": user.login
-    }}
+    return {
+        "message": "User data updated successfully",
+        "updated_user": {
+            "name_first": user.name_first,
+            "name_last": user.name_last,
+            "mail": user.mail,
+            "login": user.login
+        }
+    }
 
 @router.get("/export/all_transactions")  # Экспорт всех транзакций
 def export_all_transactions(export_request: ExportRequest, db: Session = Depends(get_db)):
