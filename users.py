@@ -15,7 +15,11 @@ from io import StringIO, BytesIO
 from models import Base, User, Session, DATABASE_URL, Transaction, Target, Credit
 
 router = APIRouter()
-access_security = JwtAccessBearer(secret_key="secret_key", auto_error=True)
+access_security = JwtAccessBearer(
+    secret_key="your_secret_key",  # Уникальный ключ
+    algorithm="HS256",            # Алгоритм шифрования
+    auto_error=True
+)
 
 ######### USER #########
 def get_user_from_token(token: str, host_name: str, db: Session):
@@ -139,7 +143,7 @@ def get_active_sessions_count(
     return {"active_sessions_count": active_sessions_count}
 
 
-@router.get("/profile", tags=["Users"])
+@router.post("/profile", tags=["Users"])
 def get_user_info(data: dict, db: Session = Depends(get_db)):
     token = data.get("token")
     host_name = data.get("host_name")
